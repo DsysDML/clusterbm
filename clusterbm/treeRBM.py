@@ -6,8 +6,8 @@ from sklearn.cluster import DBSCAN
 from ete3 import Tree
 from tqdm import tqdm
 
-from treerbm.ioRBM import get_params
-from treerbm.branch_metrics import l2_dist
+from clusterbm.io import get_params
+from clusterbm.branch_metrics import l2_dist
 
 Tensor = torch.Tensor
 Array = np.ndarray

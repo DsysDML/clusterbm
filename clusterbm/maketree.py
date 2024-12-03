@@ -13,10 +13,10 @@ import torch
 from h5py import File
 import logging
 
-from treerbm.dataset import DatasetRBM
-from treerbm.ioRBM import get_epochs
-from treerbm.treeRBM import fit, generate_tree
-from treerbm.branch_metrics import l2_dist
+from clusterbm.dataset import DatasetRBM
+from clusterbm.io import get_epochs
+from clusterbm.treeRBM import fit, generate_tree
+from clusterbm.branch_metrics import l2_dist
 
 
 def create_parser():

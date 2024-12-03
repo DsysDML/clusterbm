@@ -6,7 +6,7 @@ from tqdm import tqdm
 import numpy as np
 import h5py
 
-from treerbm.ioRBM import get_params, get_epochs
+from clusterbm.io import get_params, get_epochs
 
 Tensor = torch.Tensor
 
