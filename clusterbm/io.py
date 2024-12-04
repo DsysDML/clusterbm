@@ -1,54 +1,60 @@
-from typing import Tuple, Union
+from typing import Dict
+from pathlib import Path
 import numpy as np
 import torch
 import h5py
 
-Tensor = torch.Tensor
-
-def get_params(filename : str, stamp : Union[str, int], device : torch.device="cpu") -> Tuple[Tensor, Tensor, Tensor]:
-    """Returns the parameters of the model at the selected time stamp.
+def get_params(
+    fname: str | Path,
+    index: str | int,
+    device: torch.device = torch.device("cpu"),
+    dtype: torch.dtype = torch.float32,
+) -> Dict[str, torch.Tensor]:
+    """Returns the parameters of the model at the selected time index.
 
     Args:
-        filename (str): filename of the model.
-        stamp (Union[str, int]): Update number.
+        fname (str | Path): Name of the file containing the model.
+        index (str | int): Index identifying the training time at which the model has been saved.
         device (torch.device): device.
+        dtype (torch.dtype): dtype.
 
     Returns:
-        Tuple[Tensor, Tensor, Tensor]: Parameters of the model (vbias, hbias, weigth_matrix).
+        Dict[str, torch.Tensor]: Parameters of the model.
     """
-    stamp = str(stamp)
-    f = h5py.File(filename, "r")
-    for k in f.keys():
-        if "update_" in k:
-            base_key = "update"
-            break
-        elif "epoch_" in k:
-            base_key = "epoch"
-            break
-    key = f"{base_key}_{stamp}"
-    vbias = torch.tensor(f[key]["vbias"][()], device=device)
-    hbias = torch.tensor(f[key]["hbias"][()], device=device)
-    weight_matrix = torch.tensor(f[key]["weight_matrix"][()], device=device)
-    return (vbias, hbias, weight_matrix)
+    params = {}
+    index = str(index)
+    with h5py.File(fname, "r") as f:
+        for k in f.keys():
+            if "update_" in k:
+                base_key = "update"
+                break
+            elif "epoch_" in k:
+                base_key = "epoch"
+                break
+        key = f"{base_key}_{index}"
+        for k in f[key].keys():
+            if k in ["vbias", "hbias", "weight_matrix", "bias", "coupling_matrix"]:
+                params[k] = torch.tensor(f[key][k][()], device=device, dtype=dtype)
+        
+    return params
 
-def get_epochs(filename : str) -> np.ndarray:
-    """Returns the epochs at which the model has been saved.
+def get_checkpoints(fname: str | Path) -> np.ndarray:
+    """Returns the list of checkpoints at which the model has been saved.
 
     Args:
-        filename (str): filename of the model.
-        stamp (Union[str, int]): Update number.
+        fname (str | Path): filename of the model.
 
     Returns:
-        Tuple[Tensor, Tensor, Tensor]: Parameters of the model (vbias, hbias, weigth_matrix).
+        np.ndarray: List of checkpoints.
     """
-    f = h5py.File(filename, 'r')
     alltime = []
-    for key in f.keys():
-        if "update" in key:
-            alltime.append(int(key.replace("update_", "")))
-        elif "epoch" in key:
-            alltime.append(int(key.replace("epoch_", "")))
-    f.close()
+    with h5py.File(fname, "r") as f:
+        for key in f.keys():
+            if "update" in key:
+                alltime.append(int(key.replace("update_", "")))
+            elif "epoch" in key:
+                alltime.append(int(key.replace("epoch_", "")))
     # Sort the results
     alltime = np.sort(alltime)
+    
     return alltime

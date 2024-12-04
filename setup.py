@@ -15,7 +15,7 @@ setup(
     package_data={
         "clusterbm": ["*.sh"],  # Include all `.sh` files in the `annadca` package
     },
-    python_requires='>=3.10',
+    python_requires='>=3.10, <3.13',
     classifiers=[
         'Programming Language :: Python :: 3',
         'License :: OSI Approved :: Apache Software License',
@@ -32,5 +32,9 @@ setup(
         'pandas==2.2.3',
         'torch==2.5.1',
         'tqdm==4.67.0',
+        'adabmDCA==0.1.5',
+        'ete3==3.1.3',
+        'scikit-learn==1.5.2',
+        'h5py==3.12.1',
     ],
 )

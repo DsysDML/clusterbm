@@ -1,5 +1,3 @@
-#!/bin/bash
-
 # Pressing CTRL-C will stop the whole execution of the script
 trap ctrl_c INT; 
 function ctrl_c() { exit 5; }
@@ -29,7 +27,7 @@ while [ -n "${1}" ]; do
     shift
 done
 
-SCRIPT_FILE="${CMD_DIR}/treerbm/maketree.py"
+SCRIPT_FILE="${CMD_DIR}/clusterbm/maketree.py"
 
 export HOME_PATH=$CMD_DIR
 if $INFO
