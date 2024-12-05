@@ -1,4 +1,5 @@
-from typing import Tuple
+from typing import Tuple, Iterable, List, Callable
+from pathlib import Path
 import matplotlib.colors as plt_colors
 import numpy as np
 import torch
@@ -6,11 +7,10 @@ from sklearn.cluster import DBSCAN
 from ete3 import Tree
 from tqdm import tqdm
 
-from treerbm.ioRBM import get_params
-from treerbm.branch_metrics import l2_dist
-
-Tensor = torch.Tensor
-Array = np.ndarray
+from clusterbm.metrics import l2_dist
+from clusterbm.models import Ebm
+from clusterbm.models.bm import BmCat
+from clusterbm.models.rbm import RbmBin, RbmCat
 
 # Function to find a node by name
 def find_node_by_name(tree, name):
@@ -38,52 +38,47 @@ def set_tree_lengths(
             c.dist = branch_length
     return set_tree_lengths(t, new_nodes_list, fp, dist_fn)
     
-def fit(module,
-        fname : str,
-        data : Tensor,
-        t_ages : Array,
-        num_states : int,
-        batch_size : int=500,
-        eps : float=1.,
-        alpha : float=1e-4,
-        order : int=2,
-        max_iter : int=10000,
-        filter_ages : float=None,
-        device : torch.device=torch.device("cpu")) -> Tuple[Array, dict]:
-    """Fits the treeRBM model on the data.
+def fit(
+    model: Ebm,
+    data: torch.Tensor,
+    t_ages: Iterable[int],
+    batch_size: int = 516,
+    eps: float = 1.0,
+    epsilon: float = 1e-4,
+    order: int = 2,
+    max_iter: int = 10000,
+    filter_ages: float | None = None,
+) -> Tuple[np.ndarray, dict]:
+    """Constructs the hierarchical tree structure using the Ebm model and the data.
     
     Args:
-        module: module containing the mean-field methods.
-        fname (str): Path to the RBM model.
-        data (Tensor): Data to fill the treeRBM model.
-        t_ages (Array): Ages of the RBM at which compute the branches of the tree.
-        num_states (int): Number of categories of the categorical variables.
-        batch_size (int, optional): Batch size, to tune based on the memory availability. Defaults to 128.
-        eps (float, optional): Epsilon parameter of the DBSCAN. Defaults to 1..
-        alpha (float, optional): Convergence threshold of the TAP equations. Defaults to 1e-4.
-        save_node_features (bool, optional): Wheather to save the states (fixed points) at the tree nodes.
+        model (Ebm): Energy-based model.
+        data (torch.Tensor): Data to fill the treeRBM model.
+        t_ages (Iterable[int]): Ages of the model at which compute the branches of the tree.
+        batch_size (int, optional): Batch size, to tune based on the memory capability. Defaults to 516.
+        eps (float, optional): Epsilon parameter of the DBSCAN. Defaults to 1.0.
+        epsilon (float, optional): Convergence threshold of the mean field equations. Defaults to 1e-4.
         order (int, optional): Order of the mean-field free energy approximation. Defaults to 2.
-        max_iter (int, optional): Maximum number of TAP iterations. Defaults to 10000.
-        filter_ages (float, optional): Selects a subset of epochs such that the acceptance rate of swapping two adjacient configurations is the one specified.'
-        device (torch.device): Device.
+        max_iter (int, optional): Maximum iteration number of the self-consistent mean field equatiions. Defaults to 10000.
+        filter_ages (float | None, optional): Selects a subset of epochs such that the acceptance rate of swapping two
+            adjacient configurations is the one specified. If None, no filtering is applied. Defaults to None.'
         
     Returns:
-        Tuple[Array, dict] : Array with the encoded tree structure, dictionary that associates tree nodes to the fixed points.
+        Tuple[np.ndarray, dict] : Array with the encoded tree structure, dictionary that associates tree nodes to the fixed points.
     """
 
     # filter the ages
-    if filter_ages:
+    if filter_ages is not None:
         print(f'Filtering the ages with mutual acceptance rate of {filter_ages}:')
-        chains = module.init_sampling(fname=fname, n_gen=1000, it_mcmc=100, epochs=t_ages, num_states=num_states, device=device)
-        t_ages = module.filter_epochs(fname=fname, chains=chains, target_acc_rate=filter_ages, device=device)
-        
-    # initialize the RBM
-    params = get_params(fname, stamp=t_ages[-1], device=device)
+        chains = model.init_sampling(n_gen=1000, it_mcmc=100, epochs=t_ages)
+        t_ages = model.filter_epochs(chains=chains, target_acc_rate=filter_ages)
     
-    # generate tree_codes
-    mh = module.profile_hiddens(data, params[1], params[2])
-    mv = module.profile_visibles(mh, params[0], params[2])
-    mag_state = (mv, mh)
+    # Initialize the magnetization state
+    if isinstance(model, RbmBin) or isinstance(model, RbmCat):
+        mh = model.get_profile_hiddens(data)
+        mag_state = (data, mh)
+    elif isinstance(model, BmCat):
+        mag_state = (data,)
         
     n_data = data.shape[0]
     n_levels = len(t_ages) # depth of the tree
@@ -114,29 +109,36 @@ def fit(module,
     for t_age in reversed(t_ages):
         pbar.update(1)
         # load the rbm parameters
-        params = get_params(fname, stamp=t_age, device=device)
+        model.load(fname=model.fname, index=t_age)
         # Iterate mean field equations until convergence
         n = len(mag_state[0])
-        mag_state = module.iterate_mean_field(X=mag_state, params=params,
-                                              order=order, batch_size=batch_size,
-                                              alpha=alpha, rho=0., max_iter=max_iter, verbose=False, device=device)
+        mag_state = model.iterate_mean_field(
+            X=mag_state,
+            order=order,
+            batch_size=batch_size,
+            epsilon=epsilon,
+            rho=0.0,
+            max_iter=max_iter,
+            verbose=False,
+        )
+        
         # Clustering with DBSCAN
-        scan.fit(mag_state[1].cpu())
+        scan.fit(mag_state[0].view(len(mag_state[0]), -1).cpu())
         unique_labels = np.unique(scan.labels_)
         new_fixed_points_number = len(unique_labels)
         
         # select only a representative for each cluster and propagate the new classification up to the first layer
         mask_matrix = np.ndarray((0, n))
-        representative_list = [[], []]
+        representative_list = [[], []] if len(mag_state) == 2 else [[],]
         for l in unique_labels:
             mask = (l == scan.labels_)
             for i, mag in enumerate(mag_state):
                 representative_list[i].append(mag[mask][0].unsqueeze(0))
             mask_matrix = np.append(mask_matrix, [mask], axis=0)
         for i in range(len(representative_list)):
-            representative_list[i] = torch.cat(representative_list[i], dim=0).to(device)
+            representative_list[i] = torch.cat(representative_list[i], dim=0).to(device=model.device, dtype=model.dtype)
         mask_pipe.append(mask_matrix.astype(np.bool_))
-        mag_state = representative_list
+        mag_state = tuple(representative_list)
         level_classification = evaluate_mask_pipe(mask_pipe, unique_labels)
         
         # Add the new classification only if the number of TAP fixed points has decreased
@@ -157,46 +159,58 @@ def fit(module,
     # Construct the node features dictionary
     node_features_dict = {f'I{level}-{lab}' : fp for level, lab, fp in zip(levels_temp, labels_temp, fps_temp)}
     tree_codes = tree_codes[:, unused_levels:]
+    
     return (tree_codes, node_features_dict)
 
+def is_valid_label(label: str) -> bool:
+    if label.lower() in ['none', '-1', 'nan', '', 'uncategorized']:
+        return False
+    else:
+        return True
+
 def generate_tree(
-    tree_codes : Array,
-    folder : str,
-    leaves_names : Array,
-    legend : list=None,
-    labels_dict : list=None,
-    colors_dict : list=None,
-    depth : int=None,
-    node_features_dict : dict=None,
-    dist_fn = l2_dist
+    tree_codes: np.ndarray,
+    folder: str | Path,
+    leaves_names: Iterable[str],
+    node_features_dict: dict,
+    legend: Iterable[str] | None = None,
+    labels_dict: List[dict] | dict | None = None,
+    colors_dict: List[dict] | dict | None = None,
+    depth: int | None = None,
+    dist_fn: Callable = l2_dist
 ) -> None:
-    """Constructs an ete3.Tree objects with the previously fitted data.
+    """Constructs an ete3.Tree object with the previously fitted tree.
     
     Args:
-        tree_codes (Array): Array encoding the tree.
-        folder (str): Path to the folder where to store the data.
-        leaves_names (Array): List of names of all the leaves in the tree.
-        legend (list, optional): List with the names to assign to the legend titles. Defaults to None.
-        labels_dict (list, optional): Dictionaries of the kind {leaf_name : leaf_label} with the labels to assign to the leaves. Defaults to None.
-        colors_dict (list, optional): Dictionaries with a mapping {label : colour}. Defaults to None.
-        depth (int, optional): Maximum depth of the tree. If None, all levels are used. Defaults to None.
+        tree_codes (np.ndarray): np.ndarray object encoding the tree.
+        folder (str | Path): Path to the folder where to store the data.
+        leaves_names (Iterable[str]): Iterable with names of all the leaves in the tree.
+        node_features_dict (dict): Dictionary with the features of the nodes.
+        legend (Iterable[str] | None, optional): Iterable with the names to assign to the legend titles. Defaults to None.
+        labels_dict (List[dict] | dict | None, optional): List of dictionaries of the kind {leaf_name : leaf_label} with the
+            labels to assign to the leaves. Defaults to None.
+        colors_dict (List[dict] | dict | None, optional): List of dictionaries with a mapping {label : colour}. Defaults to None.
+        depth (int | None, optional): Maximum depth of the tree. If None, all levels are used. Defaults to None.
+        dist_fn (Callable, optional): Distance function to use to compute the branch lengths. Defaults to l2_dist.
     """
     # Validate input arguments
-    if labels_dict:
-        if (type(labels_dict) != list) and (type(labels_dict) != tuple):
+    if not isinstance(leaves_names, np.ndarray):
+        leaves_names = np.array(leaves_names)
+    if labels_dict is not None:
+        if not (isinstance(labels_dict, list) or isinstance(labels_dict, tuple)):
             labels_dict = [labels_dict]
-        if colors_dict:
-            if (type(colors_dict) != list) and (type(colors_dict) != tuple):
+        if colors_dict is not None:
+            if not (isinstance(colors_dict, list) or isinstance(colors_dict, tuple)):
                 colors_dict = [colors_dict]
-            assert(len(colors_dict) == len(labels_dict)), 'colors_dict must have the same length of labels_dict'
+            assert(len(colors_dict) == len(labels_dict)), f'colors_dict length ({len(colors_dict)}) must be the same of labels_dict ({len(labels_dict)})'
     max_depth = tree_codes.shape[1]
-    if depth:
-        assert(depth <= max_depth), 'depth parameter should be <= than the tree depth'
+    if depth is not None:
+        assert(depth <= max_depth), f'depth parameter ({depth}) should be <= than the tree depth ({max_depth})'
         n_levels = depth
     else:
         n_levels = max_depth
         
-    # Leaves names cannot contain the characters '(', ')', which are reserved for the newick sy>
+    # Leaves names cannot contain the characters '(', ')', which are reserved for the newick syntax
     leaves_names = np.array([str(ln).replace('(', '').replace(')', '') for ln in leaves_names])
         
     # Initialize the tree with the proper number of initial branches
@@ -228,11 +242,10 @@ def generate_tree(
     # Add labels to the leaves
     if labels_dict:
         for i, ld_raw in enumerate(labels_dict):
-            # Remove '-1' if present
-            ld = {k.replace('(', '').replace(')', '') : v for k, v in ld_raw.items() if v != '-1'}
+            ld = {k.replace('(', '').replace(')', '') : v for k, v in ld_raw.items() if is_valid_label(v)}
             
             if colors_dict:
-                colors_dict[i] = {l : c for l, c in colors_dict[i].items() if l != '-1'} # remove '-1' if present
+                colors_dict[i] = {l : c for l, c in colors_dict[i].items() if is_valid_label(l)}
                 leaves_colors = [colors_dict[i][label] for label in ld.values()]
                 # Create annotation file for iTOL
                 if legend is not None:
