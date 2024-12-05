@@ -22,7 +22,7 @@ def add_args_maketree(parser: argparse.ArgumentParser) -> argparse.ArgumentParse
     optional.add_argument('--max_iter',               type=int,             default=10000,            help='(Defaults to 10000). Maximum number of TAP iterations.')
     optional.add_argument('--max_depth',              type=int,             default=50,               help='(Defaults to 50). Maximum depth to visualize in the generated tree.')
     optional.add_argument('--order_mf',               type=int,             default=2,                help='(Defaults to 2). Mean-field order of the Plefka expansion.', choices=[1, 2, 3])
-    optional.add_argument('--eps',                    type=float,           default=1.,               help='(Defaults to 1.). Epsilon parameter of the DBSCAN.')
+    optional.add_argument('--eps',                    type=float,           default=0.1,              help='(Defaults to 0.1). Epsilon parameter of DBSCAN.')
     optional.add_argument('--epsilon',                type=float,           default=1e-4,             help='(Defaults to 1e-4). Convergence threshold of the mean field self consistent equations.')
     optional.add_argument('--colormap',               type=str,             default='tab20',          help='(Defaults to `tab20`). Name of the colormap to use for the labels.')
     optional.add_argument('--device',                 type=str,             default='cuda',           help='(Defaults to `cuda`). Device to use for the computations.')
