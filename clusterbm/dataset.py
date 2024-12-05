@@ -43,6 +43,8 @@ class DatasetAnn(Dataset):
             data = torch.tensor(encode_sequence(sequences, self.tokens), device=device, dtype=torch.int32)
             self.data = one_hot(data, len(self.tokens)).to(dtype)            
             self.names = np.array(names).astype(str)
+            # Substitute all non-alphanumeric characters in names with whitespace
+            self.names = np.array(["".join([c if c.isalnum() else " " for c in n]) for n in self.names])
             
         else:
             with open(data_path, "r") as f:
@@ -64,7 +66,8 @@ class DatasetAnn(Dataset):
                     raise KeyError("Legend names can't contain any special characters.")
 
             for leg in self.legend:
-                self.labels.append({str(n) : str(l) for n, l in zip(ann_df["Name"], ann_df[leg])})
+                ann_df_names = np.array(["".join([c if c.isalnum() else " " for c in n]) for n in ann_df["Name"]])
+                self.labels.append({str(n) : str(l) for n, l in zip(ann_df_names, ann_df[leg])})
         else:
             self.legend = None
             self.labels = None
