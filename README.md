@@ -3,7 +3,7 @@
 
 Code for the paper "Unsupervised hierarchical clustering using the learning dynamics of RBMs" by Aurélien Decelle, Lorenzo Rosset and Beatriz Seoane.
 
-ClusteRBM generates a relational tree of some input dataset using a previously trained RBM model.
+`clusterbm` generates a hierarchical tree of some input dataset using a previously trained BM or RBM model.
 
 <p align="center">
 <image src="/images/tree-MNIST.png" width=456 height=400/>
@@ -21,22 +21,22 @@ pip install -e .
 
 ## Usage
 
-The code for training an RBM and saving the model in the correct format can be found in [TorchRBM](https://github.com/AurelienDecelle/TorchRBM.git). To obtain a proper tree reconstruction, it is important to save the parameters of the model many times during the training at evenly spaced time intervals. We therefore suggest to set `--n_save` $\geq$ 100 and `--spacing linear`.
+The code for training an RBM and saving the model in the correct format can be found in [TorchRBM](https://github.com/AurelienDecelle/TorchRBM.git). Instead, to train a BM model and obtain the appropriate output file use [adabmDCA](https://github.com/spqb/adabmDCApy.git) with the training option `--checkpoints acceptance`.
 
 Once you have a properly trained RBM model, to generate the tree enter:
 ```bash
-./clusterbm -m <path_to_rbm_model> -d <path_to_data> -a <path_to_annotations> -o <output_folder>
+clusterbm -p <path_to_model> -d <path_to_data> -a <path_to_annotations> -o <output_folder>
 ```
 This will create a folder called `output_folder` containing the tree in newick format and the annotation files to be given to [iTOL](https://itol.embl.de/).
 
 The list of available arguments can be printed using:
 ```bash
-./clusterbm -h
+clusterbm -h
 ```
 
 ### Mandatory arguments
 
-- `--model, -m`: Path to the RBM model;
+- `--parameters, -p`: Path to the model's parameters;
 - `--output, -o`: Name of the repository where to save the output. If not already existent, it will be created;
 - `--data, -d`: Path to the data file (fasta for categorical variables and plain text for binary variables (0, 1));
 
@@ -53,7 +53,7 @@ The list of available arguments can be printed using:
 - `--colormap`: If `colors` is omitted, the colors in the tree are assigned automatically according the Matplotlib's colomap specified here. Defaults to "tab20";
 - `--max_iter`: Maximum number of iterations of the mean-field equations. Defaults to 10000;
 - `--alphabet`: When the input data come from a file in fasta format, an alphabet for the symbols encoding is needed. You can choose among the default alphabets "protein", "dna", "rna", or a coherent alphabet of your choice. Defaults to "protein";
-- `--alpha`: Convergence threshold for the mean-field equations. Defaults to 1e-4;
+- `--epsilon`: Convergence threshold for the mean-field equations. Defaults to 1e-4;
 - `--eps`: Epsilon parameter of the DBSCAN algorithm.
 
 ## Data format
@@ -75,7 +75,7 @@ Categorical data must be given in `fasta` format. The `fasta` format consists of
 -KKIILEARVNEYAPRTSNPNIPYTA
 
 ## Annotations format
-Annotations must be contained in a `csv` file. The file must have a mandatory column called "Name" and one or more columns having arbitrary names. We refer to these columns as "Legends". Each row must contain a name for the annotated data and one category for each Legend. If there is more than one Legend but you don't have annotations for all of them for a given data, just put '-1' where the information is missing. Data that do not have any annotation must not be included in this file.
+Annotations must be contained in a `csv` file. The file must have a mandatory column called "Name" and one or more columns with arbitrary names. We refer to these columns as "Legends". Each row must contain a name for the annotated data and one category for each Legend. If there is more than one Legend but you don't have annotations for all of them for a given data, just put '-1' where the information is missing. Data that do not have any annotation must not be included in this file.
 
 When data come from a plain text file, meaning that they have no name associated, an integer number will be used for the name and it will refer to the data point of the data file at the same position of the annotation in the list.
 
