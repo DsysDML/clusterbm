@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='clusterbm',
-    version='0.0.1',
+    version='0.1.0',
     author='Lorenzo Rosset, Aurélien Decelle, Beatriz Seoane',
     maintainer='Lorenzo Rosset',
     author_email='rosset.lorenzo@gmail.com',
@@ -27,14 +27,8 @@ setup(
         ],
     },
     install_requires=[
-        'matplotlib==3.9.2',
-        'numpy==2.1.3',
-        'pandas==2.2.3',
-        'torch==2.5.1',
-        'tqdm==4.67.0',
-        'adabmDCA==0.1.5',
-        'ete3==3.1.3',
-        'scikit-learn==1.5.2',
-        'h5py==3.12.1',
+        'adabmDCA==0.2.6',
+        'ete3>=3.1.3',
+        'scikit-learn>=1.5.2',
     ],
 )
