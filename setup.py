@@ -9,7 +9,7 @@ setup(
     description='Unsupervised hierarchical clustering using the learning dynamics of the (Restricted) Boltzmann Machine',
     long_description=open('README.md').read(),
     long_description_content_type='text/markdown',
-    url='https://github.com/rossetl/clusterbm',
+    url='https://github.com/DsysDML/clusterbm',
     packages=find_packages(include=['clusterbm', 'clusterbm.*']),
     include_package_data=True,
     python_requires='>=3.10, <3.13',
