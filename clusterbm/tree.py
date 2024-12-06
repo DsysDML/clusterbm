@@ -8,9 +8,7 @@ from ete3 import Tree
 from tqdm import tqdm
 
 from clusterbm.metrics import l2_dist
-from clusterbm.models import Ebm
-from clusterbm.models.bm import BmCat
-from clusterbm.models.rbm import RbmBin, RbmCat
+from clusterbm.models import Ebm, RbmBin, RbmCat, BmCat
 
 # Function to find a node by name
 def find_node_by_name(tree, name):
@@ -20,10 +18,10 @@ def find_node_by_name(tree, name):
     return None
 
 def set_tree_lengths(
-    t : Tree,
-    nodes_list : list,
-    fp : dict,
-    dist_fn
+    t: Tree,
+    nodes_list: list,
+    fp: dict,
+    dist_fn: Callable,
 ):
     new_nodes_list = []
     for p_name in nodes_list:
@@ -46,7 +44,7 @@ def fit(
     eps: float = 1.0,
     epsilon: float = 1e-4,
     order: int = 2,
-    max_iter: int = 10000,
+    max_iter: int = 2000,
     filter_ages: float | None = None,
 ) -> Tuple[np.ndarray, dict]:
     """Constructs the hierarchical tree structure using the Ebm model and the data.
