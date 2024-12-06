@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from torch.utils.data import Dataset
 from clusterbm.functional import one_hot
-from adabmDCA.fasta_utils import import_clean_dataset, encode_sequence, get_tokens
+from adabmDCA.fasta import import_from_fasta, get_tokens
 
 class DatasetAnn(Dataset):
     def __init__(
@@ -39,8 +39,8 @@ class DatasetAnn(Dataset):
         if first_line.startswith(">"):
             # Select the proper encoding
             self.tokens = get_tokens(alphabet)
-            names, sequences = import_clean_dataset(data_path, self.tokens)
-            data = torch.tensor(encode_sequence(sequences, self.tokens), device=device, dtype=torch.int32)
+            names, sequences = import_from_fasta(fasta_name=data_path, tokens=self.tokens, filter_sequences=True)
+            data = torch.tensor(sequences, device=device, dtype=torch.int32)
             self.data = one_hot(data, len(self.tokens)).to(dtype)            
             self.names = np.array(names).astype(str)
             # Substitute all non-alphanumeric characters in names with whitespace
