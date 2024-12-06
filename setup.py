@@ -12,9 +12,6 @@ setup(
     url='https://github.com/rossetl/clusterbm',
     packages=find_packages(include=['clusterbm', 'clusterbm.*']),
     include_package_data=True,
-    package_data={
-        "clusterbm": ["*.sh"],  # Include all `.sh` files in the `annadca` package
-    },
     python_requires='>=3.10, <3.13',
     classifiers=[
         'Programming Language :: Python :: 3',
