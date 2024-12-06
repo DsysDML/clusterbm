@@ -69,13 +69,15 @@ Categorical data must be given in `fasta` format. The `fasta` format consists of
 
 **Example**:
 
-\>sequence_1 <br />  
--KLVIQAAPYGPEWLPGDADDLPL<br />  
-\>sequence_2 <br />  
+```
+>sequence_1
+-KLVIQAAPYGPEWLPGDADDLPL
+>sequence_2
 -KKIILEARVNEYAPRTSNPNIPYTA
+```
 
 ## Annotations format
-Annotations must be contained in a `csv` file. The file must have a mandatory column called "Name" and one or more columns with arbitrary names. We refer to these columns as "Legends". Each row must contain a name for the annotated data and one category for each Legend. If there is more than one Legend but you don't have annotations for all of them for a given data, just put '-1' where the information is missing. Data that do not have any annotation must not be included in this file.
+Annotations must be contained in a `csv` file. The file must have a mandatory column called "Name" and one or more columns with arbitrary names. We refer to these columns as "Legends". Each row must contain a name for the annotated data and one category for each Legend. If there is more than one Legend but you don't have annotations for all of them for a given data, just put one of {'-1', 'None', 'nan', 'uncategorized'} where the information is missing. Data that do not have any annotation should not be included in this file.
 
 When data come from a plain text file, meaning that they have no name associated, an integer number will be used for the name and it will refer to the data point of the data file at the same position of the annotation in the list.
 
