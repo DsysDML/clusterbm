@@ -71,7 +71,7 @@ Categorical data must be given in `fasta` format. The `fasta` format consists of
 
 ```
 >sequence_1
--KLVIQAAPYGPEWLPGDADDLPL
+-KLVIQAAPYGPEWLPGDADDLPLTA
 >sequence_2
 -KKIILEARVNEYAPRTSNPNIPYTA
 ```
