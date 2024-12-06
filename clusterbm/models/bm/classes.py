@@ -103,7 +103,7 @@ class BmCat(Ebm):
         epsilon: float = 1e-4,
         max_iter: int = 2000,
         rho: float = 1.0,
-        batch_size: int = 516,
+        batch_size: int = 512,
         verbose: bool = False,
     ) -> Tuple[torch.Tensor, torch.Tensor]:
         """Iterates the mean field self-consistency equations at the specified order, starting from the state X, until convergence.
@@ -115,7 +115,7 @@ class BmCat(Ebm):
             epsilon (float, optional): Convergence threshold. Defaults to 1e-4.
             max_iter (int, optional): Maximum number of iterations. Defaults to 2000.
             rho (float, optional): Dumping parameter. Defaults to 1.0.
-            batch_size (int, optional): Number of samples in each batch. To set based on the memory availability. Defaults to 516.
+            batch_size (int, optional): Number of samples in each batch. To set based on the memory availability. Defaults to 512.
             verbose (bool, optional): Whether to print the progress bar or not. Defaults to True.
         
         Raises:
