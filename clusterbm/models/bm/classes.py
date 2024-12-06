@@ -154,7 +154,7 @@ class BmCat(Ebm):
                 pbar.set_description('Iterating Mean Field')
         for m in range(num_batches):
             X_batch = X[m * batch_size : (m + 1) * batch_size, :]
-            mv_batch, mh_batch = mf_function(
+            mv_batch = mf_function(
                 X=X_batch,
                 params=self.params,
                 epsilon=epsilon,
@@ -168,7 +168,7 @@ class BmCat(Ebm):
         # handle the remaining data
         if n_data % batch_size != 0:
             X_batch = X[num_batches * batch_size:, :]
-            mv_batch, mh_batch = mf_function(
+            mv_batch = mf_function(
                 X=X_batch,
                 params=self.params,
                 epsilon=epsilon,
