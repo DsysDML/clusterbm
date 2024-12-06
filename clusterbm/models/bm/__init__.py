@@ -1,0 +1,1 @@
+from clusterbm.models.bm.classes import BmCat

@@ -22,11 +22,10 @@ def _compute_energy(
     params: Dict[str, torch.Tensor],
 ) -> torch.Tensor:
 
-    vbias, params["hbias"], weight_matrix = params
-    num_visibles, num_states, num_hiddens = weight_matrix.shape
+    num_visibles, num_states, num_hiddens = params["weight_matrix"].shape
     v_oh = v.reshape(-1, num_visibles * num_states)
-    vbias_oh = vbias.flatten()
-    weight_matrix_oh = weight_matrix.reshape(num_visibles * num_states, num_hiddens)
+    vbias_oh = params["vbias"].flatten()
+    weight_matrix_oh = params["weight_matrix"].reshape(num_visibles * num_states, num_hiddens)
     field = v_oh @ vbias_oh
     exponent = params["hbias"] + (v_oh @ weight_matrix_oh)
     log_term = torch.where(exponent < 10, torch.log(1. + torch.exp(exponent)), exponent)

@@ -19,13 +19,13 @@ class Ebm(ABC):
         
         self.fname = fname
         if fname is not None:
+            self.checkpoints = get_checkpoints(fname)
             self.params = get_params(
                 fname=fname,
                 index=self.checkpoints[-1],
                 device=device,
                 dtype=dtype,
             )
-            self.epochs = self.checkpoints
         else:
             self.params = None
             self.epochs = None
@@ -41,9 +41,9 @@ class Ebm(ABC):
         fname: str | Path,
         index: int | None = None,
     ) -> None:
+        self.checkpoints = get_checkpoints(fname)
         if index is None:
-            index = get_checkpoints(fname)[-1]
-            self.epochs = get_checkpoints(fname)
+            index = self.checkpoints[-1]
         self.params = get_params(
             fname=fname,
             index=index,

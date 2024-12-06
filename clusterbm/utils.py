@@ -2,8 +2,7 @@ from pathlib import Path
 import torch
 from adabmDCA.utils import get_device, get_dtype
 from clusterbm.models import Ebm
-from clusterbm.models.bm import BmCat
-from clusterbm.models.rbm import RbmBin, RbmCat
+from clusterbm.models import RbmBin, RbmCat, BmCat
 from clusterbm.io import get_checkpoints, get_params
 
 def get_model(

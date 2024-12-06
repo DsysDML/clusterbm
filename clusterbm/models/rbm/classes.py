@@ -1,4 +1,5 @@
-from pathlib import Path, Tuple
+from pathlib import Path
+from typing import Tuple
 from tqdm import tqdm
 import torch
 from clusterbm.models.classes import Ebm
@@ -144,8 +145,8 @@ class RbmBin(Ebm):
             raise NotImplementedError('Possible choices for the order parameter: (1, 2, 3)')
         
         n_data = X[0].shape[0]
-        mv = torch.torch.Tensor([], device=self.device)
-        mh = torch.torch.Tensor([], device=self.device)
+        mv = torch.tensor([], device=self.device)
+        mh = torch.tensor([], device=self.device)
         num_batches = n_data // batch_size
         num_batches_tail = num_batches
         if n_data % batch_size != 0:
@@ -196,7 +197,7 @@ class RbmBin(Ebm):
                 
         return (mv, mh)
     
-    def profile_hiddens(
+    def get_profile_hiddens(
         self,
         X: torch.Tensor,
     ) -> torch.Tensor:
@@ -339,8 +340,8 @@ class RbmCat(Ebm):
             raise NotImplementedError('Possible choices for the order parameter: (1, 2)')
         
         n_data = X[0].shape[0]
-        mv = torch.torch.Tensor([], device=self.device)
-        mh = torch.torch.Tensor([], device=self.device)
+        mv = torch.tensor([], device=self.device)
+        mh = torch.tensor([], device=self.device)
         num_batches = n_data // batch_size
         num_batches_tail = num_batches
         if n_data % batch_size != 0:
@@ -391,7 +392,7 @@ class RbmCat(Ebm):
                 
         return (mv, mh)
     
-    def profile_hiddens(
+    def get_profile_hiddens(
         self,
         X: torch.Tensor,
     ) -> torch.Tensor:

@@ -17,9 +17,8 @@ def _compute_energy(
     params: Dict[str, torch.Tensor],
 ) -> torch.Tensor:
 
-    vbias, hbias, weight_matrix = params
-    field = v @ vbias
-    exponent = hbias + (v @ weight_matrix)
+    field = v @ params["vbias"]
+    exponent = params["hbias"] + (v @ params["weight_matrix"])
     log_term = torch.where(exponent < 10, torch.log(1. + torch.exp(exponent)), exponent)
     return - field - log_term.sum(1)
 
@@ -84,7 +83,7 @@ def iterate_mf1(
         mh_prev = torch.clone(mh)
         field_h = params["hbias"] + (mv @ params["weight_matrix"])
         mh = rho * mh_prev + (1. - rho) * torch.sigmoid(field_h)
-        field_v = params["vbias"] + (mh @ params["weight_matrix"]).mT)
+        field_v = params["vbias"] + (mh @ params["weight_matrix"].mT)
         mv = rho * mv_prev + (1. - rho) * torch.sigmoid(field_v)
         eps1 = torch.abs(mv - mv_prev).max()
         eps2 = torch.abs(mh - mh_prev).max()
