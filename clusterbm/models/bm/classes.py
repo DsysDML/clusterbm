@@ -9,6 +9,7 @@ from clusterbm.models.bm.categorical import (
     _sample as _sample_cat,
     iterate_mf1 as iterate_mf1_cat,
     iterate_mf2 as iterate_mf2_cat,
+    zero_temperature_dynamics as zero_temperature_dynamics_cat,
 )
 
 class BmCat(Ebm):
@@ -111,7 +112,7 @@ class BmCat(Ebm):
         Args:
             X (Tuple[torch.Tensor,] | torch.Tensor): Initial conditions.
             params (Dict[str, torch.Tensor]): Parameters of the model.
-            order (int, optional): Order of the expansion (1, 2). Defaults to 2.
+            order (int, optional): Order of the expansion (0, 1, 2). Defaults to 2.
             epsilon (float, optional): Convergence threshold. Defaults to 1e-4.
             max_iter (int, optional): Maximum number of iterations. Defaults to 2000.
             rho (float, optional): Dumping parameter. Defaults to 1.0.
@@ -136,8 +137,10 @@ class BmCat(Ebm):
             mf_function = iterate_mf1_cat
         elif order == 2:
             mf_function = iterate_mf2_cat
+        elif order == 0:
+            mf_function = zero_temperature_dynamics_cat
         else:
-            raise NotImplementedError('Possible choices for the order parameter: (1, 2)')
+            raise NotImplementedError('Possible choices for the order parameter: (0, 1, 2)')
         
         n_data = X[0].shape[0]
         mv = torch.tensor([], device=self.device)

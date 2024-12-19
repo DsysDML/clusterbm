@@ -92,7 +92,7 @@ def iterate_mf1(
     epsilon: float = 1e-4,
     max_iter: int = 500,
     rho: float = 1.0,
-):
+) -> torch.Tensor:
     """Iterates the TAP self consistent equations until convergence.
 
     Args:
@@ -124,7 +124,7 @@ def iterate_mf2(
     epsilon: float = 1e-4,
     max_iter: int = 500,
     rho: float = 1.0,
-):
+) -> torch.Tensor:
     """Iterates the TAP self consistent equations until convergence.
 
     Args:
@@ -142,6 +142,66 @@ def iterate_mf2(
     while True:
         X_old = X_.clone()
         X_new = _sweep_mf2(torch.randperm(X_.shape[1]),X_, params)
+        X_ = rho * X_old + (1. - rho) * X_new
+        diff = torch.abs(X_old - X_).max()
+        iterations += 1
+        if diff < epsilon or iterations > max_iter:
+            break
+    
+    return X_
+
+@torch.jit.script
+def _sweep_zero_temperature(
+    residue_idxs: torch.Tensor,
+    mag: torch.Tensor,
+    params: Dict[str, torch.Tensor],    
+) -> torch.Tensor:
+    """Performs a zero-temperature sweep over the input.
+
+    Args:
+        residue_idxs (torch.Tensor): List of residue indices in random order.
+        mag (torch.Tensor): Magnetizations of the residues.
+        params (Dict[str, torch.Tensor]): Parameters of the model.
+
+    Returns:
+        torch.Tensor: Updated magnetizations.
+    """
+    N, L, q = mag.shape
+    for i in residue_idxs:
+        # Select the couplings attached to the residue we are considering (i) and flatten along the other residues ({j})
+        couplings_residue = params["coupling_matrix"][i].view(q, L * q)
+        # Update the chains
+        logit_residue = params["bias"][i].unsqueeze(0) + mag.reshape(N, L * q) @ couplings_residue.T # (N, q)
+        prob_residue = torch.softmax(logit_residue, -1)
+        mag[:, i, :] = torch.nn.functional.one_hot(torch.argmax(prob_residue, dim=1), q).to(mag.dtype)
+    
+    return mag
+
+
+def zero_temperature_dynamics(
+    X: torch.Tensor,
+    params: Dict[str, torch.Tensor],
+    epsilon: float = 1e-4,
+    max_iter: int = 500,
+    rho: float = 1.0,
+) -> torch.Tensor:
+    """Performs a zero-temperature dynamics simulation.
+    
+    Args:
+        X (torch.Tensor): Initial magnetizations.
+        params (Dict[str, torch.Tensor]): Parameters of the model.
+        epsilon (float, optional): Convergence threshold. Defaults to 1e-6.
+        max_iter (int, optional): Maximum number of iterations. Defaults to 2000.
+        rho (float, optional): Damping parameter. Defaults to 1.0.
+        
+    Returns:
+        torch.Tensor: Fixed point magnetizations zero temperature dynamics.
+    """
+    X_ = X.clone()
+    iterations = 0
+    while True:
+        X_old = X_.clone()
+        X_new = _sweep_zero_temperature(torch.randperm(X_.shape[1]), X_, params)
         X_ = rho * X_old + (1. - rho) * X_new
         diff = torch.abs(X_old - X_).max()
         iterations += 1
