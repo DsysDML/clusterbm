@@ -32,9 +32,14 @@ def get_params(
                 base_key = "epoch"
                 break
         key = f"{base_key}_{index}"
-        for k in f[key].keys():
-            if k in ["vbias", "hbias", "weight_matrix", "bias", "coupling_matrix"]:
-                params[k] = torch.tensor(f[key][k][()], device=device, dtype=dtype)
+        if "params" in f[key].keys():
+            for k in f[key]["params"].keys():
+                if k in ["vbias", "hbias", "weight_matrix", "bias", "coupling_matrix"]:
+                    params[k] = torch.tensor(f[key]["params"][k][()], device=device, dtype=dtype)
+        else:
+            for k in f[key].keys():
+                if k in ["vbias", "hbias", "weight_matrix", "bias", "coupling_matrix"]:
+                    params[k] = torch.tensor(f[key][k][()], device=device, dtype=dtype)
         
     return params
 

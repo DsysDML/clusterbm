@@ -24,7 +24,7 @@ setup(
         ],
     },
     install_requires=[
-        'adabmDCA==0.3.0',
+        'adabmDCA>=0.3.0',
         'ete3>=3.1.3',
         'scikit-learn>=1.5.2',
     ],

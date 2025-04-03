@@ -108,8 +108,10 @@ def main():
     if args.colors is not None:
         colors_dict = dataset.colors
     else:
-        colors = plt.get_cmap(args.colormap, len(np.unique(list(labels_dict[0].values()))))
-        colors_dict = [{l : to_hex(colors(i)) for i, l in enumerate(np.unique(list(labels.values())))} for labels in labels_dict]
+        colors_dict = []
+        for ld in labels_dict:
+            colors = plt.get_cmap(args.colormap, len(np.unique(list(ld.values()))))
+            colors_dict.append({l : to_hex(colors(i)) for i, l in enumerate(np.unique(list(ld.values())))})
     if args.max_depth > max_depth:
         args.max_depth = max_depth 
         
